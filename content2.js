@@ -1,7 +1,7 @@
-function playNextVideo() {
-    console.log("Next video played using Shift + N. Generating random wait time...");
-    
-    // Simulate Shift + N key press to play the next video
+function simulateNextVideo() {
+    console.log("➡️ Pressing Shift + N to skip to next video...");
+
+    // Simulate Shift + N key press
     document.dispatchEvent(new KeyboardEvent('keydown', {
         key: 'N',
         code: 'KeyN',
@@ -9,11 +9,6 @@ function playNextVideo() {
         which: 78,
         shiftKey: true
     }));
-    
-    let waitTime = Math.floor(Math.random() * (120 - 60 + 1) + 60) * 1000;
-    console.log(`Waiting for ${waitTime / 1000} seconds before playing the next video.`);
-    
-    setTimeout(playNextVideo, waitTime);
 }
 
 function getYouTubeVideoId() {
@@ -21,19 +16,48 @@ function getYouTubeVideoId() {
     return urlParams.get("v");
 }
 
-function checkVideoIdAndStart() {
+function getRandomWaitTime(min = 60, max = 120) {
+    return Math.floor(Math.random() * (max - min + 1) + min) * 1000;
+}
+
+function waitAndRepeatUntilMatch(specialVideoID, callbackWhenMatched) {
+    const currentVideoID = getYouTubeVideoId();
+
+    if (currentVideoID === specialVideoID) {
+        console.log(`✅ Special video "${specialVideoID}" found!`);
+        callbackWhenMatched();
+    } else {
+        console.log(`🔁 Current video "${currentVideoID}" is not the target "${specialVideoID}". Skipping...`);
+        simulateNextVideo();
+
+        let waitTime = getRandomWaitTime();
+        console.log(`Waiting ${waitTime / 1000} seconds before checking again.`);
+        setTimeout(() => waitAndRepeatUntilMatch(specialVideoID, callbackWhenMatched), waitTime);
+    }
+}
+
+function playNextVideoLoop() {
+    simulateNextVideo();
+
+    let waitTime = getRandomWaitTime();
+    console.log(`Waiting ${waitTime / 1000} seconds before playing next video...`);
+
+    setTimeout(playNextVideoLoop, waitTime);
+}
+
+function startAutomation() {
     chrome.storage.sync.get(["specialVideoID", "waitTime"], function (data) {
         let specialVideoID = data.specialVideoID;
-        let waitTime = data.waitTime || 3600000; // Default to 1 hour (60 minutes) if not set
+        let waitTime = data.waitTime || 3600000; // Default to 1 hour
 
-        if (getYouTubeVideoId() === specialVideoID) {
-            console.log(`Video ID matched! Starting countdown of ${waitTime / 60000} minutes...`);
-            setTimeout(playNextVideo, waitTime);
-        } else {
-            console.log("Video ID does not match. Checking again in 5 seconds...");
-            setTimeout(checkVideoIdAndStart, 5000);
-        }
+        console.log("🎯 Searching for special video...");
+
+        waitAndRepeatUntilMatch(specialVideoID, function () {
+            console.log(`⏳ Waiting ${waitTime / 60000} minutes before starting autoplay loop...`);
+            setTimeout(playNextVideoLoop, waitTime);
+        });
     });
 }
 
-checkVideoIdAndStart();
+// Start the process
+startAutomation();

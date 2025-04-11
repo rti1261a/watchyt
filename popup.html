@@ -8,11 +8,14 @@
             width: 300px;
             padding: 10px;
         }
-        input {
+
+        input[type="text"],
+        input[type="number"] {
             width: 100%;
             padding: 5px;
             margin-top: 5px;
         }
+
         button {
             width: 100%;
             padding: 10px;
@@ -22,9 +25,11 @@
             border: none;
             cursor: pointer;
         }
+
         button:hover {
             background-color: #0056b3;
         }
+
         label {
             font-weight: bold;
             margin-top: 10px;
@@ -34,13 +39,17 @@
 </head>
 <body>
     <h3>Enter Special Video URL</h3>
+
+    <label for="useGitHubFetch">Use GitHub Auto-Fetch</label>
+    <input type="checkbox" id="useGitHubFetch">
+
     <input type="text" id="specialVideoURL" placeholder="Enter YouTube video URL">
-    
+
     <label for="waitTime">Set Wait Time (in minutes)</label>
-    <input type="number" id="waitTime" min="1" max="180" value="60"> <!-- Default 60 minutes -->
+    <input type="number" id="waitTime" min="1" max="180" value="60">
 
     <button id="saveSettings">Save</button>
-    
+
     <script src="popup.js"></script>
 </body>
 </html>

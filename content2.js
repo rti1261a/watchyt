@@ -20,29 +20,42 @@ function getRandomWaitTime(min = 60, max = 120) {
     return Math.floor(Math.random() * (max - min + 1) + min) * 1000;
 }
 
-function waitAndRepeatUntilMatch(specialVideoID, callbackWhenMatched) {
-    const currentVideoID = getYouTubeVideoId();
+let skipLoopInterval = null;
+let specialCheckInterval = null;
 
-    if (currentVideoID === specialVideoID) {
-        console.log(`✅ Special video "${specialVideoID}" found!`);
-        callbackWhenMatched();
-    } else {
-        console.log(`🔁 Current video "${currentVideoID}" is not the target "${specialVideoID}". Skipping...`);
+function startSkipLoop() {
+    if (skipLoopInterval) return; // prevent multiple intervals
+    console.log("▶️ Starting skip loop...");
+    skipLoopInterval = setInterval(() => {
         simulateNextVideo();
-
-        let waitTime = getRandomWaitTime();
-        console.log(`Waiting ${waitTime / 1000} seconds before checking again.`);
-        setTimeout(() => waitAndRepeatUntilMatch(specialVideoID, callbackWhenMatched), waitTime);
-    }
+    }, getRandomWaitTime());
 }
 
-function playNextVideoLoop() {
-    simulateNextVideo();
+function stopSkipLoop() {
+    console.log("⏸️ Stopping skip loop...");
+    clearInterval(skipLoopInterval);
+    skipLoopInterval = null;
+}
 
-    let waitTime = getRandomWaitTime();
-    console.log(`Waiting ${waitTime / 1000} seconds before playing next video...`);
+function startCheckingForSpecial(specialVideoID, waitTime) {
+    specialCheckInterval = setInterval(() => {
+        const currentVideoID = getYouTubeVideoId();
 
-    setTimeout(playNextVideoLoop, waitTime);
+        if (currentVideoID === specialVideoID) {
+            console.log(`✅ Special video "${specialVideoID}" found!`);
+
+            stopSkipLoop(); // stop skipping
+            clearInterval(specialCheckInterval); // stop checking
+
+            console.log(`⏳ Waiting ${waitTime / 60000} minutes before resuming skip loop...`);
+            setTimeout(() => {
+                startSkipLoop();
+                startCheckingForSpecial(specialVideoID, waitTime); // start checking again
+            }, waitTime);
+        } else {
+            console.log(`🔁 Current video "${currentVideoID}" is not the target "${specialVideoID}".`);
+        }
+    }, 5000); // check every 5 seconds
 }
 
 function startAutomation() {
@@ -50,12 +63,9 @@ function startAutomation() {
         let specialVideoID = data.specialVideoID;
         let waitTime = data.waitTime || 3600000; // Default to 1 hour
 
-        console.log("🎯 Searching for special video...");
-
-        waitAndRepeatUntilMatch(specialVideoID, function () {
-            console.log(`⏳ Waiting ${waitTime / 60000} minutes before starting autoplay loop...`);
-            setTimeout(playNextVideoLoop, waitTime);
-        });
+        console.log("🎯 Starting automation...");
+        startSkipLoop();
+        startCheckingForSpecial(specialVideoID, waitTime);
     });
 }
 
